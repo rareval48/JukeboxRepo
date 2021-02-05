@@ -8,7 +8,7 @@ The user will be able to use four buttons to navigate through menus: Next item, 
 
 The basic design of the jukebox will be a box, with the panels connected with tabs and screws. On each side of the box, there will be a hole for a speaker. On the front of the box, the four buttons and the LCD screen will be mounted in roughly the center. Below is a very rudimentary sketch of the design:
 
-<img src="images/rudimentary_sketch.jpg" height="360px" alt="Rudimentary Sketch">
+<img src="/images/rudimentary_sketch.jpg" height="360px" alt="Rudimentary Sketch">
 
 <br>
 
