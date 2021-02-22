@@ -10,9 +10,7 @@ The basic design of the jukebox will be a box, with the panels connected with ta
 
 <img src="/images/rudimentary_sketch.jpg" height="360px" alt="Rudimentary Sketch">
 
-[Here is a link to the basic Pseudocode](/code/pseudocode_sketch.ino)
-
-[Here is a link to the pseudocode for the library](/code/pseudocode_library.cpp)
+[Here is a link to the pseudocode directory](/pseudocode)
 
 <br>
 
