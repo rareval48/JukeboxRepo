@@ -20,7 +20,7 @@
 
 Adafruit_VS1053_FilePlayer musicPlayer = Adafruit_VS1053_FilePlayer(SHIELD_RESET, SHIELD_CS, SHIELD_DCS, DREQ, CARDCS);
 
-LiquidCrystal_I2C lcd(0x3F, 20, 4); // set the LCD address to 0x27 for a 16 chars and 2 line display
+LiquidCrystal_I2C lcd(0x3F, 16, 2); // set the LCD address to 0x27 for a 16 chars and 2 line display
 
 ClickEncoder *encoder;
 int16_t last;
@@ -94,6 +94,8 @@ void loop() {
     newTextDisplay("Your Latest Trick", "Dire Straits");
   } else if (counter / 4 == 4) {
     newTextDisplay("A Journey Begins", "Soulside Eclipse");
+  } else if (counter / 4 == 5) {
+    newTextDisplay("Blue In Green", "Miles Davis");
   }
 
   ClickEncoder::Button b = encoder->getButton();
@@ -113,6 +115,9 @@ void loop() {
         } else if (counter / 4 == 4) {
           musicPlayer.stopPlaying();
           musicPlayer.startPlayingFile("/track001.mp3");
+        } else if (counter / 4 == 5) {
+          musicPlayer.stopPlaying();
+          musicPlayer.startPlayingFile("/track004.mp3");
         }
         break;
       case ClickEncoder::Held:
