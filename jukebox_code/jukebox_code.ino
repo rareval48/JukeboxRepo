@@ -16,6 +16,8 @@
 #define CARDCS 4     // Card chip select pin
 #define DREQ 3       // VS1053 Data request, ideally an Interrupt pin
 
+#define BACK_BUTTON_PIN 9
+
 // These are the different menu states which are possible
 #define MAIN_MENU 0
 #define QUEUE_MENU 1
@@ -23,7 +25,7 @@
 #define SONG_MENU 3
 
 //set maximums
-#define MAX_QUEUE_LENGTH 10
+#define MAX_QUEUE_LENGTH 12
 #define MAX_STRING_LENGTH 32
 #define SHORTER_STRING_LENGTH 15
 
@@ -31,40 +33,9 @@
 struct Song {
   char title[MAX_STRING_LENGTH];
   char filename[SHORTER_STRING_LENGTH];
-  char genre[SHORTER_STRING_LENGTH];
   char artist[SHORTER_STRING_LENGTH];
 };
 
-/*
-  class Menu {
-  private:
-
-  public:
-    char *itemsPtr;
-    uint8_t numItems;
-    char *currentItem;
-
-    Menu(char *newItems, uint8_t newNumItems) {
-      itemsPtr = newItems;
-      numItems = newNumItems;
-      currentItem = itemsPtr;
-    }
-  };
-
-  class SongMenu {
-  private:
-
-  public:
-    Song *itemsPtr;
-    uint8_t numItems;
-    Song *currentItem;
-
-    SongMenu(Song *newItems, uint8_t newNumItems) {
-      itemsPtr = newItems;
-      numItems = newNumItems;
-      currentItem = itemsPtr;
-    }
-  };*/
 
 Adafruit_VS1053_FilePlayer musicPlayer = Adafruit_VS1053_FilePlayer(SHIELD_RESET, SHIELD_CS, SHIELD_DCS, DREQ, CARDCS);
 
@@ -76,6 +47,8 @@ int16_t last;
 void timerIsr() {   //used by the ClickEncoder
   encoder->service();
 }
+
+int backButtonState;
 
 //used for text scrolling in displayText()
 uint8_t screenWidth = 16;
@@ -100,32 +73,25 @@ long timeChangeDetected = 0;
 
 int menuState = MAIN_MENU;
 
-/*//create songList
-  const Song songList[] PROGMEM =
-  {
-  {"Money For Nothing", "/track001.mp3", "Rock", "Dire Straits"},
-  {"Blue In Green", "/track002.mp3", "Jazz", "Miles Davis"},
-  {"Fade To Black", "/track003.mp3", "Heavy Metal", "Metallica"},
-  {"Pull Me Under", "/track004.mp3", "Heavy Metal", "Dream Theater"},
-  {"Where The Streets Have No Name", "/track005.mp3", "Rock", "U2"},
-  };*/
 
 //create genreLists
 const Song rockList[] PROGMEM =
 {
-  {"Money For Nothing", "/track001.mp3", "Rock", "Dire Straits"},
-  {"Where The Streets Have No Name", "/track005.mp3", "Rock", "U2"},
+  {"Money For Nothing", "/track001.mp3", "Dire Straits"},
+  {"Where The Streets Have No Name", "/track005.mp3", "U2"},
+  {"No Line On The Horizon", "/track008.mp3", "U2"},
 };
 
 const Song metalList[] PROGMEM =
 {
-  {"Fade To Black", "/track003.mp3", "Heavy Metal", "Metallica"},
-  {"Pull Me Under", "/track004.mp3", "Heavy Metal", "Dream Theater"},
+  {"Fade To Black", "/track003.mp3", "Metallica"},
+  {"Pull Me Under", "/track004.mp3", "Dream Theater"},
+  {"Mr. Crowley", "/track007.mp3", "Ozzy Osbourne"},
 };
 
 const Song jazzList[] PROGMEM =
 {
-  {"Blue In Green", "/track002.mp3", "Jazz", "Miles Davis"},
+  {"Blue In Green", "/track002.mp3", "Miles Davis"},
 };
 
 const Song popList[] PROGMEM =
@@ -150,7 +116,7 @@ const Song electronicList[] PROGMEM =
 
 const Song otherList[] PROGMEM =
 {
-
+  {"Test Applause", "/track006.mp3", "Anonymous"},
 };
 
 //create mainMenu
@@ -161,8 +127,13 @@ char mainMenuCurrentItem[MAX_STRING_LENGTH];
 uint8_t mainMenuCurrentIndex = 0;
 
 //create queue
-Song queue[MAX_QUEUE_LENGTH] = {};
-Song nowPlaying;
+Song *queue[MAX_QUEUE_LENGTH] = {};
+Song queueMenuCurrentItem;
+uint8_t queueMenuCurrentIndex = 0;
+uint8_t queueMenuCurrentLength = 0;
+bool queueEmptyAlert = false;
+bool wasPlaying = false;
+char tempTitle[MAX_STRING_LENGTH + 5]; //for adding position in queue
 
 //create genreMenu
 const char genre0[] PROGMEM = "Heavy Metal";
@@ -181,6 +152,7 @@ uint8_t genreMenuCurrentIndex = 0;
 Song *songMenuPtr;
 Song songMenuCurrentItem;
 uint8_t songMenuCurrentIndex = 0;
+uint8_t songMenuListLength = 0;
 
 //SRAM song struct
 Song songSRAM;
@@ -191,6 +163,8 @@ char stringSRAM[MAX_STRING_LENGTH];
 void setup() {
   Serial.begin(9600);
 
+  pinMode(BACK_BUTTON_PIN, INPUT);  //set up back button
+
   //set currentItems
   strcpy_P(genreMenuCurrentItem, (char *)pgm_read_word(&(genreMenuItems[0])));
   strcpy_P(mainMenuCurrentItem, (char *)pgm_read_word(&(mainMenuItems[0])));
@@ -200,8 +174,8 @@ void setup() {
   lcd.backlight();
 
   //reserve space for manipulating these strings -- reduces heap fragmentation
-  textLine1.reserve(33);
-  textLine2.reserve(33);
+  textLine1.reserve(MAX_STRING_LENGTH);
+  textLine2.reserve(MAX_STRING_LENGTH);
 
   encoder = new ClickEncoder(A1, A0, A2);
   encoder->setAccelerationEnabled(false);
@@ -221,18 +195,20 @@ void setup() {
     while (1);  // don't do anything more
   }
 
-  musicPlayer.setVolume(20, 20);
+  musicPlayer.setVolume(30, 30);
   musicPlayer.useInterrupt(VS1053_FILEPLAYER_TIMER0_INT);   //lets it play in the background
 
   Serial.println(freeMemory());
-  //Serial.println(songOne.artist);
 }
 
 
 void loop() {
-  //keep track of timings for LCD scrolling
+  //keep track of timings for LCD scrolling and reading rotary encoder values
   clockPrev = clock;
   clock = millis();
+
+  //get state of back button
+  backButtonState = digitalRead(BACK_BUTTON_PIN);
 
   //manage rotary encoder
   encoderValue += encoder->getValue();
@@ -267,13 +243,36 @@ void loop() {
     displayText();
     //Serial.println(F("scrolled text"));
   }
-  /*
-    if (encoderValueChange != 0) {
-      changeCurrentItem(encoderValueChange);
-      Serial.print(F("EncoderValueChange: "));
-      Serial.println(encoderValueChange);
-      encoderValueChange = 0;
-    }*/
+
+  //handle playing of songs
+  if (musicPlayer.stopped()) {
+    if (queueEmptyAlert) {
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print(F("Queue Empty"));
+      lcd.setCursor(0, 1);
+      lcd.print(F("Add more songs"));
+      delay(2000);
+      queueEmptyAlert = false;
+      wasPlaying = false;
+    } if (wasPlaying) {
+      Song *newQueue[queueMenuCurrentLength];
+      for (uint8_t i = 1; i < queueMenuCurrentLength; i++) {
+        newQueue[i - 1] = queue[i];
+      }
+      queueMenuCurrentLength -= 1;
+      memcpy(&queue, &newQueue, sizeof(newQueue));
+
+      if (queueMenuCurrentLength == 0) {
+        queueEmptyAlert = true;
+      }
+    } if (queueMenuCurrentLength > 0) {
+      memcpy_P(&queueMenuCurrentItem, queue[0], sizeof(Song));
+
+      musicPlayer.startPlayingFile(queueMenuCurrentItem.filename);
+      wasPlaying = true;
+    }
+  }
 
   if (menuState == MAIN_MENU) {   //logic for the mainMenu
     setDisplayText(mainMenuCurrentItem, "");
@@ -334,47 +333,143 @@ void loop() {
           Serial.println(F("Button Clicked"));
           menuState = SONG_MENU;
 
-          getString(genreMenuItems[0]);
-          if (strcmp(genreMenuCurrentItem, stringSRAM) == 0) {
+          // this isn't the most efficient way to write this but its the easiest and most memory efficient way I can think of right now
+          strcpy_P(stringSRAM, (char *)pgm_read_word(&(genreMenuItems[0])));
+          if (strcmp(genreMenuCurrentItem, stringSRAM) == 0) {  //check if metal
             songMenuPtr = metalList;
+            songMenuListLength = sizeof(metalList) / sizeof(Song);
           }
 
-          getString(genreMenuItems[1]);
-          if (strcmp(genreMenuCurrentItem, stringSRAM) == 0) {
+          strcpy_P(stringSRAM, (char *)pgm_read_word(&(genreMenuItems[1])));  //saves memory by reusing the same string every time
+          if (strcmp(genreMenuCurrentItem, stringSRAM) == 0) {  //check if rock
             songMenuPtr = rockList;
+            songMenuListLength = sizeof(rockList) / sizeof(Song);
           }
 
-          getString(genreMenuItems[2]);
-          if (strcmp(genreMenuCurrentItem, stringSRAM)) {
+          strcpy_P(stringSRAM, (char *)pgm_read_word(&(genreMenuItems[2])));
+          if (strcmp(genreMenuCurrentItem, stringSRAM) == 0) {  //check if pop
             songMenuPtr = popList;
+            songMenuListLength = sizeof(popList) / sizeof(Song);
           }
 
-          getString(genreMenuItems[3]);
-          if (strcmp(genreMenuCurrentItem, stringSRAM) == 0) {
+          strcpy_P(stringSRAM, (char *)pgm_read_word(&(genreMenuItems[3])));
+          if (strcmp(genreMenuCurrentItem, stringSRAM) == 0) {  //check if jazz
             songMenuPtr = jazzList;
+            songMenuListLength = sizeof(jazzList) / sizeof(Song);
           }
 
-          getString(genreMenuItems[4]);
-          if (strcmp(genreMenuCurrentItem, stringSRAM) == 0) {
+          strcpy_P(stringSRAM, (char *)pgm_read_word(&(genreMenuItems[4])));
+          if (strcmp(genreMenuCurrentItem, stringSRAM) == 0) {  //check if classical
             songMenuPtr = classicalList;
+            songMenuListLength = sizeof(classicalList) / sizeof(Song);
           }
 
-          getString(genreMenuItems[5]);
-          if (strcmp(genreMenuCurrentItem, stringSRAM)) {
+          strcpy_P(stringSRAM, (char *)pgm_read_word(&(genreMenuItems[5])));
+          if (strcmp(genreMenuCurrentItem, stringSRAM) == 0) {  //check if rap
             songMenuPtr = rapList;
+            songMenuListLength = sizeof(rapList) / sizeof(Song);
           }
 
-          getString(genreMenuItems[6]);
-          if (strcmp(genreMenuCurrentItem, stringSRAM) == 0) {
+          strcpy_P(stringSRAM, (char *)pgm_read_word(&(genreMenuItems[6])));
+          if (strcmp(genreMenuCurrentItem, stringSRAM) == 0) {  //check if other
             songMenuPtr = otherList;
+            songMenuListLength = sizeof(otherList) / sizeof(Song);
           }
 
-          getString(genreMenuItems[7]);
-          if (strcmp(genreMenuCurrentItem, stringSRAM)) {
+          strcpy_P(stringSRAM, (char *)pgm_read_word(&(genreMenuItems[7])));
+          if (strcmp(genreMenuCurrentItem, stringSRAM) == 0) {  //check if electronic
+            Serial.println(F("hi"));
             songMenuPtr = electronicList;
+            songMenuListLength = sizeof(electronicList) / sizeof(Song);
+          }
+
+          memcpy_P(&songMenuCurrentItem, songMenuPtr, sizeof(Song));  //set songMenuCurrentItem
+          songMenuCurrentIndex = 0;
+          break;
+      }
+    }
+
+    if (backButtonState == HIGH) {  //go back to mainMenu
+      menuState = MAIN_MENU;
+      Serial.println(F("back button pressed"));
+    }
+
+  }   //end genreMenu logic
+
+  else if (menuState == SONG_MENU) {    //logic for songMenu
+    setDisplayText(songMenuCurrentItem.title, songMenuCurrentItem.artist);
+
+    if (encoderValueChange != 0) {  //if the rotary encoder has been turned, changes the songMenuCurrentItem based on which direction it was turned
+      if (songMenuCurrentIndex + 1 >= songMenuListLength && encoderValueChange == 1) { //set current item to first element if previous element was the last and change is +1
+        songMenuCurrentIndex = 0;
+      } else if (songMenuCurrentIndex <= 0 && encoderValueChange == -1) { //set the current item to last element if previous element was the first and change is -1
+        songMenuCurrentIndex = songMenuListLength - 1;
+      } else {  //set the current item based on the value of encoderValueChange
+        songMenuCurrentIndex += encoderValueChange;
+      }
+
+      memcpy_P(&songMenuCurrentItem, songMenuPtr + songMenuCurrentIndex, sizeof(Song)); //copy the current item into SRAM
+
+      encoderValueChange = 0;
+    }
+
+    if (encoderButton != ClickEncoder::Open) {
+      switch (encoderButton) {
+        case ClickEncoder::Clicked:
+          Serial.println(F("Button Clicked"));
+
+          if (queueMenuCurrentLength < MAX_QUEUE_LENGTH) {
+            queueMenuCurrentLength += 1;
+            queue[queueMenuCurrentLength - 1] = songMenuPtr + songMenuCurrentIndex; //add new song to last index
+            lcd.clear();
+            lcd.setCursor(0, 0);
+            lcd.print(F("Song Added"));
+            menuState = MAIN_MENU;
+            delay(1500);
+          } else {
+            lcd.clear();
+            lcd.setCursor(0, 0);
+            lcd.print(F("Queue full"));
+            lcd.setCursor(0, 1);
+            lcd.print(F("Let song end"));
+            delay(2000);
           }
           break;
       }
+    }
+
+    if (backButtonState == HIGH) {  //go back to genreMenu
+      menuState = GENRE_MENU;
+      delay(500);   //makes sure that the back button isn't triggered in the genreMenu as well
+    }
+  }   //end songMenu logic
+
+  else if (menuState == QUEUE_MENU) {
+    if (queueMenuCurrentLength == 0) {
+      setDisplayText(F("Queue Empty"), F("Add more songs"));
+    } else {
+      sprintf(tempTitle, "%i. %s", queueMenuCurrentIndex + 1, queueMenuCurrentItem.title);  //add position in queue
+
+      setDisplayText(tempTitle, queueMenuCurrentItem.artist);
+
+      if (encoderValueChange != 0) {  //if the rotary encoder has been turned, changes the songMenuCurrentItem based on which direction it was turned
+        if (queueMenuCurrentIndex + 1 >= queueMenuCurrentLength && encoderValueChange == 1) { //set current item to first element if previous element was the last and change is +1
+          queueMenuCurrentIndex = 0;
+        } else if (queueMenuCurrentIndex <= 0 && encoderValueChange == -1) { //set the current item to last element if previous element was the first and change is -1
+          queueMenuCurrentIndex = queueMenuCurrentLength - 1;
+        } else {  //set the current item based on the value of encoderValueChange
+          queueMenuCurrentIndex += encoderValueChange;
+        }
+
+        memcpy_P(&queueMenuCurrentItem, queue[queueMenuCurrentIndex], sizeof(Song)); //copy the current item into SRAM
+
+        encoderValueChange = 0;
+      }
+    }
+
+    if (backButtonState == HIGH) {  //go back to mainMenu
+      menuState = MAIN_MENU;
+      Serial.println(F("back button pressed"));
     }
   }
 }
@@ -451,213 +546,4 @@ void displayText() {        // This function is responsible for displaying menu 
     stringStart++;
     stringStop++;
   }
-}
-/*
-  void createSongMenu() {
-  int numSongs = 0;
-
-  delete [] songMenuItems;
-
-  for (int i = 0; i < sizeof(songList); i++) {
-    getSong(songList[i]);
-    if (strcmp(genreMenuCurrentItem, songSRAM.genre) == 0) {
-      memcpy(&songMenuItems[numSongs], &songSRAM, sizeof(Song));
-      numSongs++;
-    }
-  }
-
-  memcpy_P(&songMenuCurrentItem, &songMenuItems[0], sizeof(Song));
-  songMenuCurrentIndex = 0;
-  }
-
-  /*
-  int indexInItems(char *itemToFind, const uint8_t& menuToCheck) {   //finds the index of an item within an array, its kinda ugly but it does the job (does it really tho?)
-  int i  = 0;
-  int itemLen;
-
-  if (menuToCheck == MAIN_MENU) {
-    itemLen = sizeof(mainMenuItems) / sizeof(mainMenuItems[0]);
-    Serial.print(F("itemLen indexInItems "));
-    Serial.println(itemLen);
-    while (i < itemLen) {
-      getString(mainMenuItems[i]);
-      Serial.print(stringSRAM);
-      Serial.print(" == ");
-      if (strcmp(stringSRAM, itemToFind) == 0) {
-        break;
-      }
-      i++;
-    }
-  } else if (menuToCheck == GENRE_MENU) {
-    itemLen = sizeof(genreMenuItems) / sizeof(genreMenuItems[0]);
-    while (i < itemLen) {
-      getString(genreMenuItems[i]);
-      if (strcmp(stringSRAM, itemToFind) == 0) {
-        break;
-      }
-      i++;
-    }
-  } else if (menuToCheck == SONG_MENU) {
-    itemLen = sizeof(songMenuItems) / sizeof(songMenuItems[0]);
-    while (i < itemLen) {
-      getSong(songMenuItems[i]);  //this will eventually set songSRAM to the song to find
-      if (strcmp(songSRAM.title, itemToFind) == 0) {
-        break;
-      }
-      i++;
-    }
-  } else if (menuToCheck == QUEUE_MENU) {
-    itemLen = sizeof(queue) / sizeof(queue[0]);
-    while (i < itemLen) {
-      getSong(queue[i]);  //this will eventually set songSRAM to the song to find
-      if (strcmp(songSRAM.title, itemToFind) == 0) {
-        break;
-      }
-      i++;
-    }
-  }
-
-  if (i < itemLen) {
-    return i;
-  } else {
-    Serial.println(F("Error in indexInItems"));
-    return 0;
-  }
-  }
-
-  void changeCurrentItem(uint8_t amountOfChange) {   //sets the _currentItem to the next item in the array
-  if (menuState == MAIN_MENU) {
-    int itemLen = sizeof(mainMenuItems) / sizeof(mainMenuItems[0]);
-
-    int i = 0;
-    Serial.print(F("itemLen indexInItems "));
-    Serial.println(itemLen);
-    while (i < itemLen) {
-      getString(mainMenuItems[i]);
-      Serial.print(stringSRAM);
-      Serial.print(F(" == "));
-      if (strcmp(stringSRAM, mainMenuCurrentItem) == 0) {
-        break;
-      }
-      i++;
-    }
-
-    int currentIndex = i;
-    Serial.println(currentIndex);
-    if (currentIndex + 1 >= itemLen && amountOfChange == 1) {
-      Serial.println(F("currentIndex + 1 >= itemLen && amountOfChange == 1"));
-      strcpy_P(mainMenuCurrentItem, (char *)pgm_read_word(&(mainMenuItems[0])));
-    } else if (currentIndex <= 0 && amountOfChange == -1) {
-      Serial.println(F("currentIndex <= 0 && amountOfChange == -1"));
-      strcpy_P(mainMenuCurrentItem, (char *)pgm_read_word(&(mainMenuItems[itemLen - 1])));
-    } else {
-      Serial.println(F("else"));
-      strcpy_P(mainMenuCurrentItem, (char *)pgm_read_word(&(mainMenuItems[currentIndex + amountOfChange])));
-    }
-  } else if (menuState == GENRE_MENU) {
-    int itemLen = sizeof(genreMenuItems) / sizeof(genreMenuItems[0]);
-    int currentIndex = indexInItems(genreMenuCurrentItem, GENRE_MENU);
-    Serial.println(currentIndex);
-    if (currentIndex + 1 >= itemLen && amountOfChange == 1) {
-      strcpy_P(genreMenuCurrentItem, (char *)pgm_read_word(&(genreMenuItems[0])));
-    } else if (currentIndex <= 0 && amountOfChange == -1) {
-      strcpy_P(genreMenuCurrentItem, (char *)pgm_read_word(&(genreMenuItems[itemLen - 1])));
-    } else {
-      strcpy_P(genreMenuCurrentItem, (char *)pgm_read_word(&(genreMenuItems[currentIndex + amountOfChange])));
-    }
-  } else if (menuState == SONG_MENU) {
-    int itemLen = sizeof(songMenuItems) / sizeof(Song);
-    int currentIndex = indexInItems(songMenuCurrentItem.title, SONG_MENU);
-    Serial.println(currentIndex);
-    if (currentIndex + 1 >= itemLen && amountOfChange == 1) {
-      memcpy_P(&songMenuCurrentItem, &songMenuItems[0], sizeof(Song));
-    } else if (currentIndex <= 0 && amountOfChange == -1) {
-      memcpy_P(&songMenuCurrentItem, &songMenuItems[itemLen - 1], sizeof(Song));
-    } else {
-      memcpy_P(&songMenuCurrentItem, &songMenuItems[currentIndex + amountOfChange], sizeof(Song));
-    }
-  } else if (menuState == QUEUE_MENU) {
-    Serial.println(F("Shouldn't be using this function for the queueMenu. Try playNextSong()"));
-  }
-  }
-
-  void previousItem() {   //sets the _currentItem to the next item in the array
-  if (menuState == MAIN_MENU) {
-    int itemLen = sizeof(mainMenuItems) / sizeof(mainMenuItems[0]);
-    int currentIndex = indexInItems(mainMenuCurrentItem, MAIN_MENU);
-    Serial.println(currentIndex);
-    if (currentIndex <= 0) {
-      strcpy_P(mainMenuCurrentItem, (char *)pgm_read_word(&(mainMenuItems[itemLen - 1])));
-    } else {
-      strcpy_P(mainMenuCurrentItem, (char *)pgm_read_word(&(mainMenuItems[currentIndex - 1])));
-    }
-  } else if (menuState == GENRE_MENU) {
-    int itemLen = sizeof(genreMenuItems) / sizeof(genreMenuItems[0]);
-    int currentIndex = indexInItems(genreMenuCurrentItem, GENRE_MENU);
-    Serial.println(currentIndex);
-    if (currentIndex <= 0) {
-      strcpy_P(genreMenuCurrentItem, (char *)pgm_read_word(&(genreMenuItems[itemLen - 1])));
-    } else {
-      strcpy_P(genreMenuCurrentItem, (char *)pgm_read_word(&(genreMenuItems[currentIndex - 1])));
-    }
-  } else if (menuState == SONG_MENU) {
-    int itemLen = sizeof(songMenuItems) / sizeof(Song);
-    int currentIndex = indexInItems(songMenuCurrentItem.title, SONG_MENU);
-    Serial.println(currentIndex);
-    if (currentIndex <= 0) {
-      memcpy_P(&songMenuCurrentItem, &songMenuItems[itemLen - 1], sizeof(Song));
-    } else {
-      memcpy_P(&songMenuCurrentItem, &songMenuItems[currentIndex - 1], sizeof(Song));
-    }
-  } else if (menuState == QUEUE_MENU) {
-    Serial.println(F("Shouldn't be using this function for the queueMenu. Try playNextSong()"));
-  }
-  }*/
-
-void addSongToQueue() {   //adds the current song in the songMenu to the back of the queue
-  int itemLen = sizeof(queue) / sizeof(queue);
-
-  if (itemLen <= MAX_QUEUE_LENGTH) {
-    Song newQueue[itemLen + 1];  //new queue with one extra index
-    memcpy(newQueue, queue, sizeof queue);  //copy values of old queue
-    newQueue[itemLen + 1] = songMenuCurrentItem; //add new song to last index
-    memcpy(queue, newQueue, sizeof newQueue);   //replace old queue with the new one
-  } else {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print(F("Queue full"));
-    lcd.setCursor(0, 1);
-    lcd.print(F("Let song end"));
-    delay(2000);
-  }
-}
-
-void playNextSong() {    //plays the next song in the Queue
-  int itemLen = sizeof(queue) / sizeof(Song);
-
-  Song newQueue[itemLen - 1];
-  for (int i = 1; i < itemLen; i++) {
-    memcpy(&newQueue[i - 1], &queue[i], sizeof(Song));
-  }
-
-  if (itemLen == 0) {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print(F("Queue Empty"));
-    lcd.setCursor(0, 1);
-    lcd.print(F("Add more songs"));
-    delay(2000);
-  } else {
-    nowPlaying = queue[0];
-
-    musicPlayer.startPlayingFile(nowPlaying.filename);
-  }
-}
-
-void getSong(const Song &toGet) {
-  memcpy_P(&songSRAM, &toGet, sizeof(Song));  //saves the specified Song to SRAM
-}
-
-void getString(const String &toGet) {
-  strcpy_P(stringSRAM, (char *)pgm_read_word(&toGet));
 }

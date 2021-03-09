@@ -1,9 +1,2 @@
 #ignore extra libraries
-jukebox_code/libraries/Adafruit_VS1053_Library
-jukebox_code/libraries/encoder-master
-jukebox_code/libraries/LiquidCrystal_I2C-1.1.2
-jukebox_code/libraries/TimerOne
-jukebox_code/libraries/Arduino-MemoryFree
-jukebox_code/libraries/Flash
-jukebox_code/libraries/EEWrap
-jukebox_code/libraries/PGMWrap
+jukebox_code/libraries
