@@ -1,13 +1,19 @@
-// Paul Schakel
-// The sketch for the Jukebox Project.
+/*
 
+Written by Paul Schakel, March 2021
+
+This is the code for Paul and Rafael's Jukebox project. It implements a full-featured interface for choosing and playing a selection of songs.
+
+More information about the interface and how it works is available here: https://github.com/rareval48/JukeboxRepo#code
+
+*/
 
 #include <SPI.h>
-#include <ClickEncoder.h>
+#include <ClickEncoder.h>          //https://github.com/0xPIT/encoder
 #include <TimerOne.h>
-#include <Adafruit_VS1053.h>
-#include <LiquidCrystal_I2C.h>
-#include <MemoryFree.h>
+#include <Adafruit_VS1053.h>       //https://github.com/adafruit/Adafruit_VS1053_Library
+#include <LiquidCrystal_I2C.h>     //https://github.com/johnrickman/LiquidCrystal_I2C
+#include <MemoryFree.h>            //https://github.com/mpflaga/Arduino-MemoryFree
 
 // These are the pins used for the music maker shield
 #define SHIELD_RESET  -1      // VS1053 reset pin
@@ -26,14 +32,14 @@
 
 //set maximums
 #define MAX_QUEUE_LENGTH 12
-#define MAX_STRING_LENGTH 32
+#define MAX_STRING_LENGTH 36
 #define SHORTER_STRING_LENGTH 15
 
 //define structure datatypes
 struct Song {
   char title[MAX_STRING_LENGTH];
-  char filename[SHORTER_STRING_LENGTH];
-  char artist[SHORTER_STRING_LENGTH];
+  char filename[SHORTER_STRING_LENGTH - 1];
+  char artist[SHORTER_STRING_LENGTH + 3];
 };
 
 
@@ -49,6 +55,7 @@ void timerIsr() {   //used by the ClickEncoder
 }
 
 int backButtonState;
+int backButtonStatePrev;
 
 //used for text scrolling in displayText()
 uint8_t screenWidth = 16;
@@ -80,6 +87,10 @@ const Song rockList[] PROGMEM =
   {"Money For Nothing", "/track001.mp3", "Dire Straits"},
   {"Where The Streets Have No Name", "/track005.mp3", "U2"},
   {"No Line On The Horizon", "/track008.mp3", "U2"},
+  {"Brothers In Arms", "/track014.mp3", "Dire Straits"},
+  {"Sultans Of Swing", "/track015.mp3", "Dire Straits"},
+  {"DREAM", "/track021.mp3", "Ocean Grove"},
+  {"With Or Without You", "/track031.mp3", "U2"},
 };
 
 const Song metalList[] PROGMEM =
@@ -87,21 +98,41 @@ const Song metalList[] PROGMEM =
   {"Fade To Black", "/track003.mp3", "Metallica"},
   {"Pull Me Under", "/track004.mp3", "Dream Theater"},
   {"Mr. Crowley", "/track007.mp3", "Ozzy Osbourne"},
+  {"Live Or Die", "/track009.mp3", "Apocalyptica"},
+  {"Hallowed Be Thy Name", "/track017.mp3", "Iron Maiden"},
+  {"Hearts Of Iron", "/track018.mp3", "Sabaton"},
+  {"Master Of Puppets", "/track019.mp3", "Metallica"},
+  {"Peace Sells", "/track022.mp3", "Megadeth"},
+  {"Surfing with the Alien", "/track025.mp3", "Joe Satriani"},
+  {"Symphony Of Destruction", "/track026.mp3", "Megadeth"},
+  {"Toxicity", "/track027.mp3", "System Of A Down"},
+  {"Washington Is Next!", "/track028.mp3", "Megadeth"},
+  {"Hail To The King", "/track033.mp3", "Avenged Sevenfold"},
 };
 
 const Song jazzList[] PROGMEM =
 {
   {"Blue In Green", "/track002.mp3", "Miles Davis"},
+  {"Take Five", "/track012.mp3", "Dave Brubeck"},
+  {"In A Sentimental Mood", "/track016.mp3", "Duke Ellington"},
+  {"So What", "/track020.mp3", "Miles Davis"},
+  {"Pittsburgh", "/track023.mp3", "Ahmad Jamal"},
+  {"'Round Midnight", "/track024.mp3", "Thelonious Monk"},
 };
 
 const Song popList[] PROGMEM =
 {
-
+  {"Baby Shark", "/track038.mp3", "Pinkfong"},
 };
 
 const Song classicalList[] PROGMEM =
 {
-
+  {"Danse Macabre", "/track006.mp3", "Saint-Saens"},
+  {"Hungarian Dance No. 5", "/track010.mp3", "Brahms"},
+  {"Claire de Lune", "/track011.mp3", "Debussy"},
+  {"1812 Overture", "/track032.mp3", "Tchaikovsky"},
+  {"Soviet National Anthem", "/track037.mp3", "Red Army Choir"},
+  {"Blue Danube Waltz", "/track039.mp3", "Strauss"},
 };
 
 const Song rapList[] PROGMEM =
@@ -111,12 +142,13 @@ const Song rapList[] PROGMEM =
 
 const Song electronicList[] PROGMEM =
 {
-
-};
-
-const Song otherList[] PROGMEM =
-{
-  {"Test Applause", "/track006.mp3", "Anonymous"},
+  {"SATRN", "/track013.mp3", "deadmau5"},
+  {"Resonance", "/track029.mp3", "Home"},
+  {"66 Mhz", "/track030.mp3", "Waveshaper"},
+  {"Harder, Better, Faster, Stronger", "/track034.mp3", "Daft Punk"},
+  {"Strobe", "/track035.mp3", "deadmau5"},
+  {"Pacific Coast Highway", "/track036.mp3", "Kavinsky"},
+  {"Spectrum", "/track040.mp3", "Zedd"},
 };
 
 //create mainMenu
@@ -133,7 +165,7 @@ uint8_t queueMenuCurrentIndex = 0;
 uint8_t queueMenuCurrentLength = 0;
 bool queueEmptyAlert = false;
 bool wasPlaying = false;
-char tempTitle[MAX_STRING_LENGTH + 5]; //for adding position in queue
+//char tempTitle[MAX_STRING_LENGTH]; //for adding position number in queue
 
 //create genreMenu
 const char genre0[] PROGMEM = "Heavy Metal";
@@ -142,9 +174,8 @@ const char genre2[] PROGMEM = "Pop";
 const char genre3[] PROGMEM = "Jazz";
 const char genre4[] PROGMEM = "Classical";
 const char genre5[] PROGMEM = "Hip Hop/Rap";
-const char genre6[] PROGMEM = "Other";
-const char genre7[] PROGMEM = "Electronic";
-const char *const genreMenuItems[] PROGMEM = {genre0, genre1, genre2, genre3, genre4, genre5, genre6, genre7};
+const char genre6[] PROGMEM = "Electronic";
+const char *const genreMenuItems[] PROGMEM = {genre0, genre1, genre2, genre3, genre4, genre5, genre6};
 char genreMenuCurrentItem[MAX_STRING_LENGTH];
 uint8_t genreMenuCurrentIndex = 0;
 
@@ -153,9 +184,6 @@ Song *songMenuPtr;
 Song songMenuCurrentItem;
 uint8_t songMenuCurrentIndex = 0;
 uint8_t songMenuListLength = 0;
-
-//SRAM song struct
-Song songSRAM;
 
 //SRAM String
 char stringSRAM[MAX_STRING_LENGTH];
@@ -174,7 +202,7 @@ void setup() {
   lcd.backlight();
 
   //reserve space for manipulating these strings -- reduces heap fragmentation
-  textLine1.reserve(MAX_STRING_LENGTH);
+  textLine1.reserve(MAX_STRING_LENGTH + 5);
   textLine2.reserve(MAX_STRING_LENGTH);
 
   encoder = new ClickEncoder(A1, A0, A2);
@@ -203,11 +231,14 @@ void setup() {
 
 
 void loop() {
+  //Serial.println(freeMemory());
+
   //keep track of timings for LCD scrolling and reading rotary encoder values
   clockPrev = clock;
   clock = millis();
 
   //get state of back button
+  backButtonStatePrev = backButtonState;
   backButtonState = digitalRead(BACK_BUTTON_PIN);
 
   //manage rotary encoder
@@ -229,7 +260,6 @@ void loop() {
     Serial.print(F("EncoderValueChange: "));
     Serial.println(encoderValueChange);
     encoderValuePrev = encoderValue;
-    timeChangeDetected = 0;
     encoderChangeDetected = false;
   }
 
@@ -255,7 +285,7 @@ void loop() {
       delay(2000);
       queueEmptyAlert = false;
       wasPlaying = false;
-    } if (wasPlaying) {
+    } if (wasPlaying) {   //removes the first item from the queue and shifts all the other items forward to fill the gap
       Song *newQueue[queueMenuCurrentLength];
       for (uint8_t i = 1; i < queueMenuCurrentLength; i++) {
         newQueue[i - 1] = queue[i];
@@ -303,8 +333,11 @@ void loop() {
           } else if (strcmp(mainMenuCurrentItem, "Go to Queue") == 0) {
             menuState = QUEUE_MENU;
             Serial.println(F("menu is now queueMenu"));
-          }
+          }          
           break;
+        case ClickEncoder::Held:    //a way to skip songs
+          musicPlayer.stopPlaying();
+          delay(500);
       }
     }
   } //end mainMenu logic
@@ -333,7 +366,7 @@ void loop() {
           Serial.println(F("Button Clicked"));
           menuState = SONG_MENU;
 
-          // this isn't the most efficient way to write this but its the easiest and most memory efficient way I can think of right now
+          //checks the current item in the genre menu against each genre, and then sets the song menu pointer to the first element of the list for the selected genre
           strcpy_P(stringSRAM, (char *)pgm_read_word(&(genreMenuItems[0])));
           if (strcmp(genreMenuCurrentItem, stringSRAM) == 0) {  //check if metal
             songMenuPtr = metalList;
@@ -371,12 +404,6 @@ void loop() {
           }
 
           strcpy_P(stringSRAM, (char *)pgm_read_word(&(genreMenuItems[6])));
-          if (strcmp(genreMenuCurrentItem, stringSRAM) == 0) {  //check if other
-            songMenuPtr = otherList;
-            songMenuListLength = sizeof(otherList) / sizeof(Song);
-          }
-
-          strcpy_P(stringSRAM, (char *)pgm_read_word(&(genreMenuItems[7])));
           if (strcmp(genreMenuCurrentItem, stringSRAM) == 0) {  //check if electronic
             Serial.println(F("hi"));
             songMenuPtr = electronicList;
@@ -389,7 +416,7 @@ void loop() {
       }
     }
 
-    if (backButtonState == HIGH) {  //go back to mainMenu
+    if (backButtonState == HIGH && backButtonStatePrev == LOW) {  //go back to mainMenu
       menuState = MAIN_MENU;
       Serial.println(F("back button pressed"));
     }
@@ -418,7 +445,7 @@ void loop() {
         case ClickEncoder::Clicked:
           Serial.println(F("Button Clicked"));
 
-          if (queueMenuCurrentLength < MAX_QUEUE_LENGTH) {
+          if (queueMenuCurrentLength < MAX_QUEUE_LENGTH) {  //if queue isnt full, adds the displayed song to queue
             queueMenuCurrentLength += 1;
             queue[queueMenuCurrentLength - 1] = songMenuPtr + songMenuCurrentIndex; //add new song to last index
             lcd.clear();
@@ -426,7 +453,7 @@ void loop() {
             lcd.print(F("Song Added"));
             menuState = MAIN_MENU;
             delay(1500);
-          } else {
+          } else {    //queue is full
             lcd.clear();
             lcd.setCursor(0, 0);
             lcd.print(F("Queue full"));
@@ -440,7 +467,7 @@ void loop() {
 
     if (backButtonState == HIGH) {  //go back to genreMenu
       menuState = GENRE_MENU;
-      delay(500);   //makes sure that the back button isn't triggered in the genreMenu as well
+      //delay(500);   //makes sure that the back button isn't triggered in the genreMenu as well
     }
   }   //end songMenu logic
 
@@ -448,11 +475,11 @@ void loop() {
     if (queueMenuCurrentLength == 0) {
       setDisplayText(F("Queue Empty"), F("Add more songs"));
     } else {
-      sprintf(tempTitle, "%i. %s", queueMenuCurrentIndex + 1, queueMenuCurrentItem.title);  //add position in queue
+      sprintf(stringSRAM, "%i. %s", queueMenuCurrentIndex + 1, queueMenuCurrentItem.title);  //add position in queue
 
-      setDisplayText(tempTitle, queueMenuCurrentItem.artist);
+      setDisplayText(stringSRAM, queueMenuCurrentItem.artist);
 
-      if (encoderValueChange != 0) {  //if the rotary encoder has been turned, changes the songMenuCurrentItem based on which direction it was turned
+      if (encoderValueChange != 0) {  //if the rotary encoder has been turned, changes the queueMenuCurrentItem based on which direction it was turned
         if (queueMenuCurrentIndex + 1 >= queueMenuCurrentLength && encoderValueChange == 1) { //set current item to first element if previous element was the last and change is +1
           queueMenuCurrentIndex = 0;
         } else if (queueMenuCurrentIndex <= 0 && encoderValueChange == -1) { //set the current item to last element if previous element was the first and change is -1
@@ -547,3 +574,5 @@ void displayText() {        // This function is responsible for displaying menu 
     stringStop++;
   }
 }
+
+// https://bit.ly/3ernfRt
