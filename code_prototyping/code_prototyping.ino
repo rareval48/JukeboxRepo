@@ -89,9 +89,9 @@ void loop() {
   if (counter / 4 == 1) {
     newTextDisplay("Money for Nothing", "Dire Straits");
   } else if (counter / 4 == 2) {
-    newTextDisplay("Love Over Gold", "Dire Straits");
+    newTextDisplay("Blue In Green", "Miles Davis");
   } else if (counter / 4 == 3) {
-    newTextDisplay("Your Latest Trick", "Dire Straits");
+    newTextDisplay("Fade To Black", "Metallica");
   } else if (counter / 4 == 4) {
     newTextDisplay("A Journey Begins", "Soulside Eclipse");
   } else if (counter / 4 == 5) {
@@ -105,7 +105,7 @@ void loop() {
         Serial.println("Button Clicked");
         if (counter / 4 == 1) {
           musicPlayer.stopPlaying();
-          musicPlayer.startPlayingFile("/track005.mp3");
+          musicPlayer.startPlayingFile("/track001.mp3");
         } else if (counter / 4 == 2) {
           musicPlayer.stopPlaying();
           musicPlayer.startPlayingFile("/track002.mp3");
