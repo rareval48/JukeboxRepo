@@ -4,7 +4,7 @@ Written by Paul Schakel, March 2021
 
 This is the code for Paul and Rafael's Jukebox project. It implements a full-featured interface for choosing and playing a selection of songs.
 
-More information about the interface and how it works is available here: https://github.com/rareval48/JukeboxRepo#code
+More information about the interface and how it works is available here: https://github.com/rareval48/JukeboxRepo#code---paul
 
 */
 
@@ -84,55 +84,54 @@ int menuState = MAIN_MENU;
 //create genreLists
 const Song rockList[] PROGMEM =
 {
-  {"Money For Nothing", "/track001.mp3", "Dire Straits"},
-  {"Where The Streets Have No Name", "/track005.mp3", "U2"},
-  {"No Line On The Horizon", "/track008.mp3", "U2"},
   {"Brothers In Arms", "/track014.mp3", "Dire Straits"},
+  {"Money For Nothing", "/track001.mp3", "Dire Straits"},
   {"Sultans Of Swing", "/track015.mp3", "Dire Straits"},
   {"DREAM", "/track021.mp3", "Ocean Grove"},
+  {"No Line On The Horizon", "/track008.mp3", "U2"},
+  {"Where The Streets Have No Name", "/track005.mp3", "U2"},
   {"With Or Without You", "/track031.mp3", "U2"},
 };
 
 const Song metalList[] PROGMEM =
 {
-  {"Fade To Black", "/track003.mp3", "Metallica"},
-  {"Pull Me Under", "/track004.mp3", "Dream Theater"},
-  {"Mr. Crowley", "/track007.mp3", "Ozzy Osbourne"},
   {"Live Or Die", "/track009.mp3", "Apocalyptica"},
-  {"Hallowed Be Thy Name", "/track017.mp3", "Iron Maiden"},
-  {"Hearts Of Iron", "/track018.mp3", "Sabaton"},
-  {"Master Of Puppets", "/track019.mp3", "Metallica"},
-  {"Peace Sells", "/track022.mp3", "Megadeth"},
-  {"Surfing with the Alien", "/track025.mp3", "Joe Satriani"},
-  {"Symphony Of Destruction", "/track026.mp3", "Megadeth"},
-  {"Toxicity", "/track027.mp3", "System Of A Down"},
-  {"Washington Is Next!", "/track028.mp3", "Megadeth"},
   {"Hail To The King", "/track033.mp3", "Avenged Sevenfold"},
+  {"Pull Me Under", "/track004.mp3", "Dream Theater"},
+  {"Hallowed Be Thy Name", "/track017.mp3", "Iron Maiden"},
+  {"Surfing with the Alien", "/track025.mp3", "Joe Satriani"},
+  {"Peace Sells", "/track022.mp3", "Megadeth"},
+  {"Symphony Of Destruction", "/track026.mp3", "Megadeth"},
+  {"Washington Is Next!", "/track028.mp3", "Megadeth"},
+  {"Fade To Black", "/track003.mp3", "Metallica"},
+  {"Mr. Crowley", "/track007.mp3", "Ozzy Osbourne"},
+  {"Hearts Of Iron", "/track018.mp3", "Sabaton"},
+  {"Toxicity", "/track027.mp3", "System Of A Down"},
 };
 
 const Song jazzList[] PROGMEM =
 {
-  {"Blue In Green", "/track002.mp3", "Miles Davis"},
+  {"Pittsburgh", "/track023.mp3", "Ahmad Jamal"},
   {"Take Five", "/track012.mp3", "Dave Brubeck"},
   {"In A Sentimental Mood", "/track016.mp3", "Duke Ellington"},
+  {"Blue In Green", "/track002.mp3", "Miles Davis"},
   {"So What", "/track020.mp3", "Miles Davis"},
-  {"Pittsburgh", "/track023.mp3", "Ahmad Jamal"},
   {"'Round Midnight", "/track024.mp3", "Thelonious Monk"},
 };
 
 const Song popList[] PROGMEM =
 {
-  {"Baby Shark", "/track038.mp3", "Pinkfong"},
+  {"Baby Shark", "/track038.mp3", "Pinkfong"},  //this is a rickroll
 };
 
 const Song classicalList[] PROGMEM =
 {
-  {"Danse Macabre", "/track006.mp3", "Saint-Saens"},
   {"Hungarian Dance No. 5", "/track010.mp3", "Brahms"},
   {"Claire de Lune", "/track011.mp3", "Debussy"},
-  {"1812 Overture", "/track032.mp3", "Tchaikovsky"},
   {"Soviet National Anthem", "/track037.mp3", "Red Army Choir"},
+  {"Danse Macabre", "/track006.mp3", "Saint-Saens"},
   {"Blue Danube Waltz", "/track039.mp3", "Strauss"},
+  {"1812 Overture", "/track032.mp3", "Tchaikovsky"},
 };
 
 const Song rapList[] PROGMEM =
@@ -142,12 +141,12 @@ const Song rapList[] PROGMEM =
 
 const Song electronicList[] PROGMEM =
 {
-  {"SATRN", "/track013.mp3", "deadmau5"},
-  {"Resonance", "/track029.mp3", "Home"},
-  {"66 Mhz", "/track030.mp3", "Waveshaper"},
   {"Harder, Better, Faster, Stronger", "/track034.mp3", "Daft Punk"},
+  {"SATRN", "/track013.mp3", "deadmau5"},
   {"Strobe", "/track035.mp3", "deadmau5"},
+  {"Resonance", "/track029.mp3", "Home"},
   {"Pacific Coast Highway", "/track036.mp3", "Kavinsky"},
+  {"66 Mhz", "/track030.mp3", "Waveshaper"},
   {"Spectrum", "/track040.mp3", "Zedd"},
 };
 
@@ -165,7 +164,6 @@ uint8_t queueMenuCurrentIndex = 0;
 uint8_t queueMenuCurrentLength = 0;
 bool queueEmptyAlert = false;
 bool wasPlaying = false;
-//char tempTitle[MAX_STRING_LENGTH]; //for adding position number in queue
 
 //create genreMenu
 const char genre0[] PROGMEM = "Heavy Metal";
@@ -369,8 +367,8 @@ void loop() {
           //checks the current item in the genre menu against each genre, and then sets the song menu pointer to the first element of the list for the selected genre
           strcpy_P(stringSRAM, (char *)pgm_read_word(&(genreMenuItems[0])));
           if (strcmp(genreMenuCurrentItem, stringSRAM) == 0) {  //check if metal
-            songMenuPtr = metalList;
-            songMenuListLength = sizeof(metalList) / sizeof(Song);
+            songMenuPtr = metalList;  //same as songMenuPtr = &metalList[0]
+            songMenuListLength = sizeof(metalList) / sizeof(Song);  //have to divide by sizeof(Song) bc sizeof() gets the size in bytes
           }
 
           strcpy_P(stringSRAM, (char *)pgm_read_word(&(genreMenuItems[1])));  //saves memory by reusing the same string every time
