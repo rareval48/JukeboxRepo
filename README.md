@@ -40,7 +40,7 @@ For our Sensor Robot, we (Rafael Arevalo and Paul Schakel) decided to create a j
 
 ## Design
 
-Our final product differed greatly to the original concept we came up with, as we completely reworked the user interface and decided to leave a feature. The original design was going to use four buttons for the user to navigate the menus, but at the suggestion of Mr. Helmstetter, we swapped out three of the buttons for one rotary encoder. The rotary encoder replaced the **next**, **previous**, and **select** buttons with the rotation of the knob and the button within the encoder. 
+Our final product differed greatly from the original concept we came up with, as we completely reworked the user interface and decided to leave some features out. The original design was going to use four buttons for the user to navigate the menus, but at the suggestion of Mr. Helmstetter, we swapped out three of the buttons for one rotary encoder. The rotary encoder replaced the **next**, **previous**, and **select** buttons with the rotation of the knob and the button within the encoder. 
 
 <img src="/images/design_comparison.png" height=360px alt="Comparison of original and final design">
 
@@ -51,7 +51,7 @@ Additionally, our original design was going to have a coin slot which the user w
 
 ## Code Prototype - Paul
 
-Before going to the trouble of creating all of the menus and other user interface features, we decided to  create a prototype to make sure that all the components were functional. While most of the code in the prototype didn't make it to the final code sketch, the displayText() function was complete at this stage, so it was copied over. 
+Before going to the trouble of creating all of the menus and other user interface features, we decided to create a prototype to make sure that all the components were functional. While most of the code in the prototype didn't make it to the final code sketch, the displayText() function was complete at this stage, so it was copied over. 
 
 #### displayText Function
 
@@ -166,15 +166,11 @@ Overall, this project has been very good for my development as a programmer sinc
 
 ## CAD Design - Rafael
 
-### Description
 
 
-
-### Evidence
+### Links and Images
 
 [Link to CAD](https://cvilleschools.onshape.com/documents/5302f12635f173b4517b5b74/w/e0544944f1d230a23635893f/e/f6586d6b7905c4d1f824e306)
-
-### Images
 
 
 
@@ -187,15 +183,9 @@ Overall, this project has been very good for my development as a programmer sinc
 
 ## Assembly
 
-### Description
 
 
-
-### Evidence
-
-
-
-### Images
+### Links and Images
 
 
 
