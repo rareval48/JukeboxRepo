@@ -124,6 +124,8 @@ Basically, this function displays the two lines of text on the LCD screen, scrol
 
 [![Short demo video of jukebox prototype](http://img.youtube.com/vi/Xu1ld7YbddA/0.jpg)](http://www.youtube.com/watch?v=Xu1ld7YbddA "Short demo video of jukebox prototype")
 
+Short demo video of jukebox prototype
+
 ### Reflection
 
 The prototype wasn't too difficult since it was just basically just copying code from examples and cobbling it together with some logic. There was a moment where I was concerned that playing music in the background wouldn't work, since I had hooked up the musicPlayer to play the song which was displayed on the LCD screen, and it wasn't playing. However. I soon realized that what my code was actually doing was trying to play the song thousands of times per second, and once I had put in some logic to only play the displayed song when I pressed a button, it worked perfectly.
@@ -154,6 +156,10 @@ The songs on the jukebox are organized by genre, and then sorted alphabetically 
 <img src="/images/jukebox_wiring.png" height=360px>
 
 Wiring diagram for the Jukebox
+
+[![Short demo of final jukebox user interface](http://img.youtube.com/vi/iKjhCtucQsA/0.jpg)](http://www.youtube.com/watch?v=iKjhCtucQsA "Short demo of final jukebox user interface")
+
+Short demo of jukebox user interface
 
 ### Reflection
 
