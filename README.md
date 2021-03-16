@@ -133,13 +133,19 @@ The prototype wasn't too difficult since it was just basically just copying code
 
 ## Code - Paul
 
-The code for this project was rather complex, and the plan which I had created in the [pseudocode](/pseudocode) turned out to be far too complicated than it needed to be. Originally, there were going to be several classes stored within a library called JukeboxUtils. However, once I started running out of SRAM halfway through the making of the code, I realized that I needed to cut some corners to make the program fit on the Arduino. After lots of missteps and malfunctions, I settled on a design which would, instead of using classes, just make each menu a collection of variables tied together within the main loop. I did create one [struct](https://en.wikipedia.org/wiki/Struct_(C_programming_language)) which would contain the information about each song, but all of the other classes were removed.
+The code for this project was rather complex, and the plan which I had created in the [pseudocode](/pseudocode) turned out to be far more complicated than it needed to be. Originally, there were going to be several classes stored within a library called JukeboxUtils. However, once I started running out of SRAM halfway through the making of the code, I realized that I needed to cut some corners to make the program fit on the Arduino. After lots of missteps and malfunctions, I settled on a design which would, instead of using classes, just make each menu a collection of variables tied together within the main loop. I did create one [struct](https://en.wikipedia.org/wiki/Struct_(C_programming_language)) which would contain the information about each song, but all of the other classes were removed.
 
-In order to keep SRAM usage below critical levels (usually around 80%) I had to use a variety of different approaches to contain the items in each menu. For the genre menu and the main menu, I stored the value of each item (which were char arrays) in program memory, and created an array of those items which was also stored in program memory. To access the items, I stored the current item in a char array stored in SRAM. For the song menu, I took a different approach, creating an array of Song structs for each genre, and then using a pointer to access the values in each array. Similarly to my approach for accessing items in the genre and main menus, I used a Song struct stored in SRAM to contain the current item. Unfortunately, the approach I used for the song menu was impossible to use again for the queue and the queue menu because the array of songs in the queue had to be able to contain any song which the user selects, in any order. In order to save SRAM, I made the array of items in the queue an array of pointers to Songs. This approach solved the problem nicely, and I could also use the current item approach I used for the song menu in the queue menu.
+### Item Storage
+
+In order to keep SRAM usage below critical levels (usually around 80%) I had to use a variety of different approaches to contain the items in each menu. For the genre menu and the main menu, I stored the value of each item (which were char arrays) in program memory, and created an array of those items which was also stored in program memory. To access the items, I stored the current item in a char array stored in SRAM. 
+
+For the song menu, I took a different approach, creating an array of Song structs for each genre, and then using a pointer to access the values in each array. Similarly to my approach for accessing items in the genre and main menus, I used a Song struct stored in SRAM to contain the current item. 
+
+Unfortunately, the approach I used for the song menu was impossible to use again for the queue and the queue menu because the array of songs in the queue had to be able to contain any song which the user selects, in any arrangement. In order to save SRAM, I stored the items in the queue as an array of pointers to Songs. This approach solved the problem nicely, and I could also use the current item approach I used for the song menu in the queue menu.
 
 ### Songs
 
-The songs on the jukebox are organized by genre, and then alphabetically by the artist's name within each genre. A list of all of the songs we added can be found [here](/docs/songs.md)
+The songs on the jukebox are organized by genre, and then sorted alphabetically by the artist's name within each genre. A list of all of the songs we added can be found [here](/docs/songs.md)
 
 ### Links and Images
 
