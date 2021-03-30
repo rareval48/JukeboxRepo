@@ -33,7 +33,7 @@ More information about the interface and how it works is available here: https:/
 
 //set maximums
 #define MAX_QUEUE_LENGTH 12
-#define MAX_STRING_LENGTH 34
+#define MAX_STRING_LENGTH 36
 #define SHORTER_STRING_LENGTH 15
 
 //define structure datatypes
@@ -41,6 +41,12 @@ struct Song {
   char title[MAX_STRING_LENGTH];
   char filename[SHORTER_STRING_LENGTH - 1];
   char artist[SHORTER_STRING_LENGTH + 3];
+};
+
+
+struct genreListInfo {  //used for creating songMenus
+  Song *genreList;
+  uint8_t length;
 };
 
 
@@ -175,6 +181,16 @@ const char genre5[] PROGMEM = "Hip Hop/Rap";
 const char genre6[] PROGMEM = "Electronic";
 const char *const genreMenuItems[] PROGMEM = {genre0, genre1, genre2, genre3, genre4, genre5, genre6};
 uint8_t genreMenuCurrentIndex = 0;
+const genreListInfo genreLists[] PROGMEM =    //used for creating new songMenus
+{
+  {metalList, sizeof(metalList) / sizeof(Song)},
+  {rockList, sizeof(rockList) / sizeof(Song)},
+  {popList, sizeof(popList) / sizeof(Song)},
+  {jazzList, sizeof(jazzList) / sizeof(Song)},
+  {classicalList, sizeof(classicalList) / sizeof(Song)},
+  {rapList, sizeof(rapList) / sizeof(Song)},
+  {electronicList, sizeof(electronicList) / sizeof(Song)},
+};
 
 //create songMenu
 Song *songMenuPtr;
@@ -330,15 +346,13 @@ void loop() {
         case ClickEncoder::Clicked:
           Serial.println(F("Button Clicked"));
 
-          strcpy_P(stringSRAM, (char *)pgm_read_word(&(mainMenuItems[0]))); //saves SRAM by using existing allocated memory
-          if (strcmp(menuCurrentItemString, stringSRAM) == 0) {
+          if (strcmpProgmem(menuCurrentItemString, &(mainMenuItems[0]))) {
             menuState = GENRE_MENU;
             strcpy_P(menuCurrentItemString, (char *)pgm_read_word(&(genreMenuItems[genreMenuCurrentIndex]))); //set the current item for genre menu
             Serial.println(F("menu is now genreMenu"));
           }
 
-          strcpy_P(stringSRAM, (char *)pgm_read_word(&(mainMenuItems[1]))); //saves SRAM by using existing allocated memory
-          if (strcmp(menuCurrentItemString, stringSRAM) == 0) {
+          if (strcmpProgmem(menuCurrentItemString, &(mainMenuItems[1]))) {
             menuState = QUEUE_MENU;
             memcpy_P(&menuCurrentItemSong, queue[0], sizeof(Song));  //set the current item for queue menu
             Serial.println(F("menu is now queueMenu"));
@@ -371,48 +385,13 @@ void loop() {
         case ClickEncoder::Clicked:
           Serial.println(F("Button Clicked"));
           menuState = SONG_MENU;
-
+          
           //checks the current item in the genre menu against each genre, and then sets the song menu pointer to the first element of the list for the selected genre
-          strcpy_P(stringSRAM, (char *)pgm_read_word(&(genreMenuItems[0])));
-          if (strcmp(menuCurrentItemString, stringSRAM) == 0) {  //check if metal
-            songMenuPtr = metalList;  //same as songMenuPtr = &metalList[0]
-            songMenuListLength = sizeof(metalList) / sizeof(Song);  //have to divide by sizeof(Song) bc sizeof() gets the size in bytes
-          }
-
-          strcpy_P(stringSRAM, (char *)pgm_read_word(&(genreMenuItems[1])));  //saves memory by reusing the same SRAM string every time
-          if (strcmp(menuCurrentItemString, stringSRAM) == 0) {  //check if rock
-            songMenuPtr = rockList;
-            songMenuListLength = sizeof(rockList) / sizeof(Song);
-          }
-
-          strcpy_P(stringSRAM, (char *)pgm_read_word(&(genreMenuItems[2])));
-          if (strcmp(menuCurrentItemString, stringSRAM) == 0) {  //check if pop
-            songMenuPtr = popList;
-            songMenuListLength = sizeof(popList) / sizeof(Song);
-          }
-
-          strcpy_P(stringSRAM, (char *)pgm_read_word(&(genreMenuItems[3])));
-          if (strcmp(menuCurrentItemString, stringSRAM) == 0) {  //check if jazz
-            songMenuPtr = jazzList;
-            songMenuListLength = sizeof(jazzList) / sizeof(Song);
-          }
-
-          strcpy_P(stringSRAM, (char *)pgm_read_word(&(genreMenuItems[4])));
-          if (strcmp(menuCurrentItemString, stringSRAM) == 0) {  //check if classical
-            songMenuPtr = classicalList;
-            songMenuListLength = sizeof(classicalList) / sizeof(Song);
-          }
-
-          strcpy_P(stringSRAM, (char *)pgm_read_word(&(genreMenuItems[5])));
-          if (strcmp(menuCurrentItemString, stringSRAM) == 0) {  //check if rap
-            songMenuPtr = rapList;
-            songMenuListLength = sizeof(rapList) / sizeof(Song);
-          }
-
-          strcpy_P(stringSRAM, (char *)pgm_read_word(&(genreMenuItems[6])));
-          if (strcmp(menuCurrentItemString, stringSRAM) == 0) {  //check if electronic
-            songMenuPtr = electronicList;
-            songMenuListLength = sizeof(electronicList) / sizeof(Song);
+          for (int i = 0; i < sizeof(genreMenuItems) / sizeof(genreMenuItems[0]); i++) {
+            if (strcmpProgmem(menuCurrentItemString, &(genreMenuItems[i]))) {
+              songMenuPtr = pgm_read_word(&(genreLists[i].genreList));    //read data out of progmem
+              songMenuListLength = pgm_read_word(&(genreLists[i].length));  //same thing here
+            }
           }
 
           memcpy_P(&menuCurrentItemSong, songMenuPtr, sizeof(Song));  //set current item for song menu
@@ -452,13 +431,19 @@ void loop() {
           Serial.println(F("Button Clicked"));
 
           if (queueMenuCurrentLength < MAX_QUEUE_LENGTH) {  //if queue isnt full, adds the displayed song to queue
+            queue[queueMenuCurrentLength] = songMenuPtr + songMenuCurrentIndex; //add new song to last index
             queueMenuCurrentLength += 1;
-            queue[queueMenuCurrentLength - 1] = songMenuPtr + songMenuCurrentIndex; //add new song to last index
+            menuState = MAIN_MENU;
+            strcpy_P(menuCurrentItemString, (char *)pgm_read_word(&(mainMenuItems[mainMenuCurrentIndex]))); //set current item for main menu
+            if (musicPlayer.paused() && queueMenuCurrentLength == 0) {  //starts playing the song if playback is paused and there isn't any additional song in the queue
+              memcpy_P(&menuCurrentItemSong, queue[0], sizeof(Song));
+
+              musicPlayer.startPlayingFile(menuCurrentItemSong.filename);
+              wasPlaying = true;
+            }
             lcd.clear();
             lcd.setCursor(0, 0);
             lcd.print(F("Song Added"));
-            menuState = MAIN_MENU;
-            strcpy_P(menuCurrentItemString, (char *)pgm_read_word(&(mainMenuItems[mainMenuCurrentIndex]))); //set current item for main menu
             delay(1500);
           } else {    //queue is full
             lcd.clear();
@@ -506,18 +491,32 @@ void loop() {
       switch (encoderButton) {
         case ClickEncoder::Clicked:
           Serial.println(F("Button Clicked"));
-
           if (canEditQueue) {
             Song *newQueue[queueMenuCurrentLength];
             for (uint8_t i = 0; i < queueMenuCurrentLength; i++) {
               if (i == queueMenuCurrentIndex) {
                 continue;
-              } else {
+              } else if (i > queueMenuCurrentIndex) {
                 newQueue[i - 1] = queue[i];
+              } else {
+                newQueue[i] = queue[i];
               }
             }
             queueMenuCurrentLength -= 1;
             memcpy(&queue, &newQueue, sizeof(newQueue));
+
+            if (queueMenuCurrentIndex == 0) { //stops playing if the first song in the queue was removed (the song which was playing)
+              musicPlayer.stopPlaying();
+              wasPlaying = false;   //makes sure there isn't a double skip
+            }
+
+            queueMenuCurrentIndex = 0;
+            memcpy_P(&menuCurrentItemSong, queue[queueMenuCurrentIndex], sizeof(Song)); //copy the current item into SRAM
+
+            lcd.clear();
+            lcd.setCursor(0, 0);
+            lcd.print(F("Removed Song"));
+            delay(1500);
           }
           break;
         
@@ -529,6 +528,7 @@ void loop() {
           } else {
             hiddenMenuTrigger = false;
           }
+          delay(1000); //otherwise it just gets triggered repeatedly
           break;
 
         case ClickEncoder::DoubleClicked:
@@ -536,6 +536,8 @@ void loop() {
 
           if (hiddenMenuTrigger) {
             menuState = HIDDEN_MENU;
+            hiddenMenuTrigger = false;
+            canEditQueue = false;
             strcpy_P(menuCurrentItemString, (char *)pgm_read_word(&(hiddenMenuItems[hiddenMenuCurrentIndex]))); //set current item for hidden menu
             Serial.println(F("Entered Hidden Menu"));
           }
@@ -545,6 +547,8 @@ void loop() {
 
     if (backButtonState == HIGH) {  //go back to mainMenu
       menuState = MAIN_MENU;
+      hiddenMenuTrigger = false; //reset trigger
+      canEditQueue = false;
       strcpy_P(menuCurrentItemString, (char *)pgm_read_word(&(mainMenuItems[mainMenuCurrentIndex]))); //set current item for main menu
       Serial.println(F("back button pressed"));
     }
@@ -573,32 +577,30 @@ void loop() {
       case ClickEncoder::Clicked:
         Serial.println(F("Button Clicked"));
 
-        strcpy_P(stringSRAM, (char *)pgm_read_word(&(hiddenMenuItems[0]))); //saves SRAM by using existing allocated memory
-        if (strcmp(menuCurrentItemString, stringSRAM) == 0) {
+        if (strcmpProgmem(menuCurrentItemString, &(hiddenMenuItems[0]))) {   //check if pause/play
           if (musicPlayer.stopped()) {
             lcd.clear();
             lcd.setCursor(0, 0);
             lcd.print(F("Can't pause"));
             lcd.setCursor(0, 1);
             lcd.print(F("Not playing"));
-            delay(2000);
+            delay(1500);
           } else if (!musicPlayer.paused()) {
             musicPlayer.pausePlaying(true);
             lcd.clear();
             lcd.setCursor(0, 0);
             lcd.print(F("Paused playback"));
-            delay(2000);
+            delay(1500);
           } else {
             musicPlayer.pausePlaying(false);
             lcd.clear();
             lcd.setCursor(0, 0);
             lcd.print(F("Resumed playback"));
-            delay(2000);
+            delay(1500);
           }
         }
 
-        strcpy_P(stringSRAM, (char *)pgm_read_word(&(hiddenMenuItems[1]))); //saves SRAM by using existing allocated memory
-        if (strcmp(menuCurrentItemString, stringSRAM) == 0) {
+        if (strcmpProgmem(menuCurrentItemString, &(hiddenMenuItems[1]))) {   //check if skip song
           if (queueMenuCurrentLength != 0) {
             musicPlayer.stopPlaying();
             lcd.clear();
@@ -615,8 +617,7 @@ void loop() {
           }
         }
 
-        strcpy_P(stringSRAM, (char *)pgm_read_word(&(hiddenMenuItems[2]))); //saves SRAM by using existing allocated memory
-        if (strcmp(menuCurrentItemString, stringSRAM) == 0) {
+        if (strcmpProgmem(menuCurrentItemString, &(hiddenMenuItems[2]))) {   //check if queue edit mode
           if (queueMenuCurrentLength != 0) {
             canEditQueue = true;
             menuState = QUEUE_MENU;
@@ -636,12 +637,14 @@ void loop() {
           }
         }
 
-        strcpy_P(stringSRAM, (char *)pgm_read_word(&(hiddenMenuItems[3]))); //saves SRAM by using existing allocated memory
-        if (strcmp(menuCurrentItemString, stringSRAM) == 0) {
+        if (strcmpProgmem(menuCurrentItemString, &(hiddenMenuItems[3]))) {   //check if clear queue
           if (queueMenuCurrentLength != 0) {
             queueMenuCurrentLength = 0;
-            Song *newQueue[MAX_QUEUE_LENGTH] = {};
+            queueMenuCurrentIndex = 0;
+            queueEmptyAlert = true;
+            Song *newQueue[MAX_QUEUE_LENGTH];
             memcpy(&queue, &newQueue, sizeof(newQueue));
+            musicPlayer.stopPlaying();
             lcd.clear();
             lcd.setCursor(0, 0);
             lcd.print(F("Queue cleared"));
@@ -661,10 +664,21 @@ void loop() {
 
     if (backButtonState == HIGH) {
       menuState = QUEUE_MENU;
-      strcpy_P(menuCurrentItemString, (char *)pgm_read_word(&(queue[queueMenuCurrentIndex]))); //copy the current item into SRAM
+      memcpy_P(&menuCurrentItemSong, queue[queueMenuCurrentIndex], sizeof(Song)); //copy the current item into SRAM      
       Serial.println(F("back button pressed"));
       delay(500);
     }
+  }
+}
+
+
+bool strcmpProgmem(const char (& toCompareSRAM)[MAX_STRING_LENGTH], const char* const* toComparePROGMEM) {
+  strcpy_P(stringSRAM, (char *)pgm_read_word(toComparePROGMEM)); //saves SRAM by using existing allocated memory
+
+  if (strcmp(toCompareSRAM, stringSRAM) == 0) {
+    return true;
+  } else {
+    return false;
   }
 }
 
