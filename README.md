@@ -9,8 +9,8 @@ This is the repo for Rafael and Paul's Jukebox Project.
 * [Design](#design)
 * [Code Prototype](#code-prototype---paul)
 * [Code](#code---paul)
-* [CAD Design](#cad-design---rafael)
-* [Assembly](#Assembly)
+* [CAD Design](#cad-design---rafael-and-paul)
+* [Assembly](#assembly---rafael-and-paul)
 
 <br>
 <br>
@@ -40,7 +40,7 @@ For our Sensor Robot, we (Rafael Arevalo and Paul Schakel) decided to create a j
 
 ## Design
 
-Our final product differed greatly from the original concept we came up with, as we completely reworked the user interface and decided to leave some features out. The original design was going to use four buttons for the user to navigate the menus, but at the suggestion of Mr. Helmstetter, we swapped out three of the buttons for one rotary encoder. The rotary encoder replaced the **next**, **previous**, and **select** buttons with the rotation of the knob and the button within the encoder. 
+Our final product differed greatly from the original concept we came up with, as we completely reworked the user interface and decided to leave some features out. We decided that the best design for the Jukebox would be to have a simple box with holes for the components. However, the particulars of some of the specific designs, such as the user interface, were still up in the air. The original design was going to use four buttons for the user to navigate the menus, but at the suggestion of Mr. Helmstetter, we swapped out three of the buttons for one rotary encoder. The rotary encoder replaced the **next**, **previous**, and **select** buttons with the rotation of the knob and the button within the encoder. 
 
 <img src="/images/design_comparison.png" height=360px alt="Comparison of original and final design">
 
@@ -170,22 +170,25 @@ Overall, this project has been very good for my development as a programmer sinc
 <br>
 <br>
 
-## CAD Design - Rafael
+## CAD Design - Rafael and Paul
 
-
+Our CAD design was fairly straightforward - a box with holes for the various components. As chronicled in our initial [design](#design) process, we made some changes to the user interface, but eventually settled on the design depicted below, with an LCD screen centered in the upper half of the front panel, and a rotary encoder and a back button to navigate the menus. We also included holes in the sides for the speakers, and small holes to interface with the Aruduino,  charge the battery, and hold in place the power switch.
 
 ### Links and Images
 
-[Link to CAD](https://cvilleschools.onshape.com/documents/5302f12635f173b4517b5b74/w/e0544944f1d230a23635893f/e/f6586d6b7905c4d1f824e306)
+[Link to CAD](https://cvilleschools.onshape.com/documents/5302f12635f173b4517b5b74/w/e0544944f1d230a23635893f/e/4d6f8522cf2141e3e206f9b8)
 
-<img src="https://user-images.githubusercontent.com/71342195/112662801-7e16df00-8e2e-11eb-9b70-1f4c4cf22ee2.png">
-<img src="https://user-images.githubusercontent.com/71342195/112662813-7fe0a280-8e2e-11eb-92bd-9c1cb7e22bc3.png">
+<img src="/images/CAD_images/final_assembly.png" height=360px alt="Final Assembly">
+
+Final Assembly
+
+<img src="/images/CAD_images/top_down_inside_view.png" height=360px alt="Inside View">
+
+Inside View
 
 ### Reflection
 
-The designing of the actual CAD was prety easy, even though there was alot of revisions and modifications. Mainly, the hardest thing about the designing and building is all the holes for the screws. One major change was changing it from friction fit to allowing screws through, as it would lessen the stress on the holes for the acryllic.
-
-
+The designing of the actual CAD was fairly simple, but it took us a while because we had to make a lot of revisions and modifications. The hardest part was the tedium of repeatedly inserting screw holes, screws and nuts. We had to make a few major changes to the design over time, as we started with the idea of using friction to hold the box together, but decided to use screws instead so it would be more sturdy. We also originally made the box too small to fit all the parts, so we had to make some significant modifications to accomodate the components.
 
 <br>
 <br>
@@ -195,12 +198,6 @@ The designing of the actual CAD was prety easy, even though there was alot of re
 
 
 ### Links and Images
-[Link to CAD](https://cvilleschools.onshape.com/documents/5302f12635f173b4517b5b74/w/e0544944f1d230a23635893f/e/f6586d6b7905c4d1f824e306)
-
-<img src="https://user-images.githubusercontent.com/71342195/112663222-f087bf00-8e2e-11eb-9f3e-2a6cdb5009c0.png">
-
-
 
 ### Reflection
 
-Assembling all of the pieces together was the easiest part of the build but, we ran out of room for components so we had to make some changes to the height of the box. This is also the step where we started thinking about adding screws and not doing friction fit.
