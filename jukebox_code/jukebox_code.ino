@@ -693,6 +693,9 @@ void setDisplayText(const String& line1, const String& line2) {   //sets the two
     //set text variables
     textLine1 = line1;
     textLine2 = line2;
+
+    Serial.println("clear screen and set new screen values");
+    lcd.clear(); //make sure that the screen is cleared
   }
 }
 
@@ -703,19 +706,20 @@ void displayText() {        // This function is responsible for displaying menu 
   int length1 = textLine1.length();
   int length2 = textLine2.length();
 
-  lcd.clear();  //clears previous displayed text
-
   if (length1 > 16 && length2 <= 16) {   //only scrolls line 1 if true
+    lcd.clear();
     toScroll = textLine1;
     lineToScroll = 0;
     lcd.setCursor(0, 1);
     lcd.print(textLine2);
   } else if (length1 <= 16 && length2 > 16) {   //only scrolls line 2 if true
+    lcd.clear();
     toScroll = textLine2;
     lineToScroll = 1;
     lcd.setCursor(0, 0);
     lcd.print(textLine1);
   } else if (length1 > 16 && length2 > 16) {   //scrolls both lines if true
+    lcd.clear();
     lcd.setCursor(scrollCursor, 0);
     lcd.print(textLine1.substring(stringStart, stringStop));
     lcd.setCursor(scrollCursor, 1);
