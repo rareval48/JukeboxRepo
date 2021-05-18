@@ -54,7 +54,10 @@ This document details the songs which are on the jukebox and where to find them.
 
 ## Rap
 
-Nothing...
+* [My Name Is - Eminem](https://www.youtube.com/watch?v=0mNUa1m3RUI)
+* [Just Lose It - Eminem](https://www.youtube.com/watch?v=mECeH-bgOjo)
+* [Hey Ya! - OutKast](https://www.youtube.com/watch?v=ReEgXh-wURs)
+* [Rosa Parks - OutKast](https://www.youtube.com/watch?v=qrOKZeCdaRM)
 
 ## Electronic
 
