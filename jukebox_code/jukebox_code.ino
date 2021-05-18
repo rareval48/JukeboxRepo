@@ -144,7 +144,10 @@ const Song classicalList[] PROGMEM =
 
 const Song rapList[] PROGMEM =
 {
-
+  {"My Name Is", "/track041.mp3", "Eminem"},
+  {"Just Lose It", "/track042.mp3", "Eminem"},
+  {"Hey Ya!", "/track043.mp3", "OutKast"},
+  {"Rosa Parks", "/track044.mp3", "OutKast"},
 };
 
 const Song electronicList[] PROGMEM =
