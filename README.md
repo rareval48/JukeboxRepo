@@ -13,6 +13,13 @@ This is the repo for Rafael and Paul's Jukebox Project.
 * [Assembly](#assembly---rafael-and-paul)
 
 <br>
+
+## Additional Documentation
+* [Plan](/docs/plan.md)
+* [Songs](/docs/songs.md)
+* [Component List](/docs/component_list.md)
+
+<br>
 <br>
 
 ## Overview
@@ -195,9 +202,20 @@ The designing of the actual CAD was fairly simple, but it took us a while becaus
 
 ## Assembly - Rafael and Paul
 
-
+The fabrication and assembly of the Jukebox was the final part of our project. We used a laser cutter to create the sides of our box, and a 3D printer to create several tiny standoffs for the LCD screen. After fabricating our parts, we then installed our various components and assembled the wiring. The list of materials and components in the Jukebox can be found [here](docs/component_list.md).
 
 ### Links and Images
 
+<img src="/images/assembly_images/front_on.jpg" height=360px alt="Front View">
+
+Front View
+
+<img src="/images/assembly_images/front_top_on.jpg" height=360px alt="Front Top View">
+
+Front Top View
+
+[Additional Images can be found here](/images/assembly_images/)
+
 ### Reflection
 
+The assembly process was fairly simple and straightforward compared to the other parts of the project. However, it wasn't without some missteps. We originally designed the box with the t-hole slots much closer together, which led to several corners breaking off while we were assembling the box. Thankfully, since we designed the box using a set of variables, the issue was easily fixed by changing the value of the TAB_DISTANCE variable. We also ran into an issue with one of the standoffs shorting out a connection on the Arduino which made it unable to recieve USB input or output. We fixed this with a slightly less elegant solution, using electrical tape to protect the circuitry of the Arduino. Overall, the Jukebox project has been an amazing learning experience, and we are both very happy with the result.
