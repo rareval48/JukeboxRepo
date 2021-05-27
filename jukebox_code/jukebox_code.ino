@@ -254,8 +254,6 @@ void setup() {
 
 
 void loop() {
-  //Serial.println(freeMemory());
-
   //keep track of timings for LCD scrolling and reading rotary encoder values
   clockPrev = clock;
   clock = millis();
@@ -291,9 +289,8 @@ void loop() {
     Serial.println(encoderValue);
   }
 
-  if (clock % 500 <= 100 && clockPrev % 500 > 100) {  //scrolls the text twice a second
+  if (clock % 390 <= 100 && clockPrev % 390 > 100) {  //scrolls the text twice a second
     displayText();
-    //Serial.println(F("scrolled text"));
   }
 
   //handle playing of songs
