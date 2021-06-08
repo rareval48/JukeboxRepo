@@ -11,6 +11,7 @@ This is the repo for Rafael and Paul's Jukebox Project.
 * [Code](#code---paul)
 * [CAD Design](#cad-design---rafael-and-paul)
 * [Assembly](#assembly---rafael-and-paul)
+* [What we would do differently next time](#what-we-would-do-differently-next-time)
 
 <br>
 
