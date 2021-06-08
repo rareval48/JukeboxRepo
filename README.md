@@ -219,3 +219,19 @@ Front Top View
 ### Reflection
 
 The assembly process was fairly simple and straightforward compared to the other parts of the project. However, it wasn't without some missteps. We originally designed the box with the t-hole slots much closer together, which led to several corners breaking off while we were assembling the box. Thankfully, since we designed the box using a set of variables, the issue was easily fixed by changing the value of the TAB_DISTANCE variable. We also ran into an issue with one of the standoffs shorting out a connection on the Arduino which made it unable to recieve USB input or output. We fixed this with a slightly less elegant solution, using electrical tape to protect the circuitry of the Arduino. Overall, the Jukebox project has been an amazing learning experience, and we are both very happy with the result.
+
+<br>
+<br>
+
+## What we would do differently next time
+
+We were very happy with our result this time, but if we were to create the Jukebox again, there are a few things we would do differently.
+
+* 3D printing the standoffs for the Arduino
+    - One of the metal standoffs shorted out part of USB circuit on the Arduino, we made a quick and dirty fix with electrical tape, but in a redesign we would simply use 3D printed standoffs.
+* Better wire management
+    - The inside of the Jukebox doesn't look very clean, wiring wise, and that could be improved significantly with some brackets along the edges to tuck wires away nicely.
+* Menu redesign
+    - The menu as it is right now is functional, but it isn't really very intuitive. If we changed the horizontal scrolling to a vertical scrolling interface, we could make the menu a lot cleaner. Another idea would be to use a larger LCD screen as well, so there would be more room for a vertical menu.
+* CAD design methods
+    - To create our box, we created each side individually. However, a faster method to create our box would have been to create a solid box that would be the correct dimensions, and base the sides off of that box, deleting the solid box afterward.
